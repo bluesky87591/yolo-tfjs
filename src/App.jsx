@@ -1,35 +1,81 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect, useRef } from "react";
+import * as tf from "@tensorflow/tfjs";
+import "@tensorflow/tfjs-backend-webgl"; // set backend to webgl
+import ButtonHandler from "./components/btn-handler";
+import { detectVideo } from "./utils/detect";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+  const [model, setModel] = useState({
+    net: null,
+    inputShape: [1, 0, 0, 3],
+  }); // init model & input shape
+
+  // references
+  const imageRef = useRef(null);
+  const cameraRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  // model configs
+  const modelName = "yolov8n";
+
+  useEffect(() => {
+    tf.ready().then(async () => {
+      const yolov8 = await tf.loadGraphModel(
+        `${window.location.href}/${modelName}_web_model/model.json`,
+        {}
+      ); // load model
+
+      // warming up model
+      const dummyInput = tf.ones(yolov8.inputs[0].shape);
+      const warmupResults = yolov8.execute(dummyInput);
+
+      setModel({
+        net: yolov8,
+        inputShape: yolov8.inputs[0].shape,
+      }); // set model & input shape
+
+      tf.dispose([warmupResults, dummyInput]); // cleanup memory
+    });
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+    <div className="App">
+      <div className="header">
+        <h1>YOLOv8 Live Detection App</h1>
         <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
+          YOLOv8 live detection application on browser powered by{" "}
+          <code>tensorflow.js</code>
+        </p>
+        <p>
+          Serving : <code className="code">{modelName}</code>
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
 
-export default App
+      <div className="content">
+        <video
+          autoPlay
+          muted
+          ref={cameraRef}
+          onPlay={() =>
+            detectVideo(cameraRef.current, model, canvasRef.current)
+          }
+        />
+        <canvas
+          width={model.inputShape[1]}
+          height={model.inputShape[2]}
+          ref={canvasRef}
+        />
+      </div>
+
+      <ButtonHandler
+        imageRef={imageRef}
+        cameraRef={cameraRef}
+        videoRef={videoRef}
+      />
+    </div>
+  );
+};
+
+export default App;
