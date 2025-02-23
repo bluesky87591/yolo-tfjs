@@ -43,13 +43,9 @@ const App = () => {
   return (
     <div className="App">
       <div className="header">
-        <h1>YOLOv8 Live Detection App</h1>
+        <h1>YOLO + Object Detection App</h1>
         <p>
-          YOLOv8 live detection application on browser powered by{" "}
-          <code>tensorflow.js</code>
-        </p>
-        <p>
-          Serving : <code className="code">{modelName}</code>
+          Env : <code className="code">tensorflow.js</code>
         </p>
       </div>
 
